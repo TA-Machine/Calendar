@@ -1,10 +1,11 @@
 import datetime
+import json
 import os
 import sqlite3
+import urllib.request
 import streamlit as st
 import email
 from email import policy
-import google.generativeai as genai
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -77,10 +78,8 @@ def check_login():
 if not check_login():
   st.stop()
 
-# --- Gemini API Setup ---
+# --- Gemini API Setup (Native REST - No External Library Required) ---
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
-if API_KEY:
-  genai.configure(api_key=API_KEY)
 
 
 def parse_email_with_ai(email_text):
@@ -107,20 +106,33 @@ def parse_email_with_ai(email_text):
     Email Content:
     {email_text}
     """
-  try:
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(prompt)
-    import ast
 
-    cleaned_text = (
-        response.text.strip()
-        .replace("```python", "")
-        .replace("```json", "")
-        .replace("```", "")
-    )
-    start_idx = cleaned_text.find("{")
-    end_idx = cleaned_text.rfind("}") + 1
-    return ast.literal_eval(cleaned_text[start_idx:end_idx])
+  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+  payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+  req = urllib.request.Request(
+      url,
+      data=json.dumps(payload).encode("utf-8"),
+      headers={"Content-Type": "application/json"},
+      method="POST",
+  )
+
+  try:
+    with urllib.request.urlopen(req) as response:
+      res_data = json.loads(response.read().decode("utf-8"))
+      response_text = res_data["candidates"][0]["content"]["parts"][0]["text"]
+
+      import ast
+
+      cleaned_text = (
+          response_text.strip()
+          .replace("```python", "")
+          .replace("```json", "")
+          .replace("```", "")
+      )
+      start_idx = cleaned_text.find("{")
+      end_idx = cleaned_text.rfind("}") + 1
+      return ast.literal_eval(cleaned_text[start_idx:end_idx])
   except Exception as e:
     return {
         "project_name": "Parsed Project (Error in AI parsing)",
