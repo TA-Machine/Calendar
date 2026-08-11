@@ -1,3 +1,2 @@
 streamlit
-extract-msg
 google-genai
