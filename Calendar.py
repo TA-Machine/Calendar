@@ -4,7 +4,7 @@ import sqlite3
 import streamlit as st
 import email
 from email import policy
-from google import genai
+import google.generativeai as genai
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -79,6 +79,8 @@ if not check_login():
 
 # --- Gemini API Setup ---
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
+if API_KEY:
+  genai.configure(api_key=API_KEY)
 
 
 def parse_email_with_ai(email_text):
@@ -98,7 +100,6 @@ def parse_email_with_ai(email_text):
         "metal_panels": "Standard Drip Edge",
     }
 
-  client = genai.Client(api_key=API_KEY)
   prompt = f"""
     Extract the following project details from this bid invitation email and return them strictly as a valid Python dictionary format with these exact keys:
     'project_name', 'due_date' (YYYY-MM-DD), 'location', 'email', 'submission_link', 'roofing_system', 'insulation_thickness', 'membrane_type', 'attachment_type', 'metal_gauge', 'metal_color', 'metal_panels'.
@@ -107,9 +108,8 @@ def parse_email_with_ai(email_text):
     {email_text}
     """
   try:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash", contents=prompt
-    )
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    response = model.generate_content(prompt)
     import ast
 
     cleaned_text = (
