@@ -156,7 +156,7 @@ st.sidebar.write(f"Logged in as: **{st.session_state.username}**")
 
 # --- Drag & Drop Email Ingestion ---
 with st.expander("📥 Drag & Drop New Bid Invitation (.eml or text)", expanded=False):
-  uploaded_file = st.file_uploader("Upload Email File", type=["eml", "txt"])
+  uploaded_file = st.file_uploader("Upload Email File", type=["msg", "eml", "txt"])
 
   raw_text = ""
   if uploaded_file is not None:
